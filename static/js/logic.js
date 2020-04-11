@@ -12,50 +12,54 @@ id: "mapbox.streets",
 accessToken: API_KEY
 }).addTo(myMap);
 
-//time converter function
+//time converter function, taken from Dom's that was presented during class on 2020.04.04
 function timeConvert(time){
-    var timeJS = new Date(time*1000);
+    // Dom had time multiplied by 1000...but it works without it and doesn't work with it which is why I'm not multiplying it by 1000.
 
-    var year = timeJS.getFullYear(); //doesn't record year correctly
-    var month = timeJS.getMonth();
-    var day = timeJS.getDate();
-    
-    var fullDate = year+"."+month+"."+day
+    var d = new Date(time).toLocaleDateString();
+    var t = new Date(time).toLocaleTimeString();
 
-    return fullDate;
+    var datetime = "Date: " + d + " Time: " + t;
+    return datetime;
 }
 
-//create variable outside d3.json area to keep it in a larger scope so it can be used for the legend.
-var respData; 
+//function to get the color based on the size of the magnitude
+function getColor(d){
+    var color = "";
+    if (d> 5){
+        color = "#FF0000";
+    }
+    else if (d > 4) {
+        color = "#FF4D00";
+    }
+    else if (d > 3) {
+        color = "#FFA200";
+    }
+    else if (d > 2) {
+        color = "#FFE600";
+    }
+    else if (d > 1){
+        color = "#E6FF00";
+    }
+    else {
+        color = "#5EFF00";
+    }
+
+    return color;
+}
+
 
 //read in data and add markers
 d3.json(link, function(response){
-    respData = response.features;
-    console.log(respData);
-    var color = "";
+    var respData = response.features;
+    // console.log(respData);
+
 
     //loop through responses to do the following...
     for (var i = 0; i<respData.length; i++){
-        
-        //assign color based on magnitude
-        if (respData[i].properties.mag > 5){
-            color = "#FF0000";
-        }
-        else if (respData[i].properties.mag > 4) {
-            color = "#FF4D00";
-        }
-        else if (respData[i].properties.mag > 3) {
-            color = "#FFA200";
-        }
-        else if (respData[i].properties.mag > 2) {
-            color = "#FFE600";
-        }
-        else if (respData[i].properties.mag > 1){
-            color = "#E6FF00";
-        }
-        else {
-            color = "#5EFF00";
-        }
+
+        // call function to get color
+        var magColor = getColor(respData[i].properties.mag)
 
         //converts the timestamp to a human readable format
         var date = timeConvert(respData[i].properties.time)
@@ -63,23 +67,28 @@ d3.json(link, function(response){
         //add the circles to the map and give them the popUp
         L.circle([respData[i].geometry.coordinates[1], respData[i].geometry.coordinates[0]], {
             fillOpacity: .75,
-            color: color,
-            radius: respData[i].properties.mag * 3000
-        }).bindPopup("Date: " + date + "<br> Location: "+ respData[i].properties.place+ "<br> Magnitude: " + respData[i].properties.mag).addTo(myMap);
+            fillColor: magColor,
+            color: "black",
+            weight: .5,
+            radius: respData[i].properties.mag * 5000
+            //don't have formatting for the date because the formatting is handled in the function. 
+        }).bindPopup(date + "<br> Location: "+ respData[i].properties.place+ "<br> Magnitude: " + respData[i].properties.mag).addTo(myMap);
     }
 });
 
-
-// add legend
+// add legend (my first attempt)
 var legend = L.control({position: "bottomleft"});
-legend.onAdd = function() {
-    var div = L.DomUtil.create("div", "info legend");
-    var limits = [0, 1, 2, 3, 4, 5];
-    var colors = ["#5EFF00", "#E6FF00", "#FFE600", "#FFA200", "#FF4D00", "#FF0000"];
+legend.onAdd = function(myMap) {
+    var div = L.DomUtil.create("div", "info legend"),
+        limits = [0, 1, 2, 3, 4, 5];
+        div.innerHTML += '<h2>Magnitude</h2>'
+        for (var i = 0; i < limits.length; i++) {
+            div.innerHTML += '<ul style=background-color:' + getColor(limits[i]+1) + '> ' + 
+            limits[i] + (limits[i + 1] ? '&ndash;' + limits[i + 1] : '+ </ul>');
+            // limits[i] + (limits[i + 1] ? '&ndash;' + limits[i + 1] + '<br>' : '+ </ul>');
+            }
+        return div;
 
-    div.innerHTML = legend;
-    
-    return div;
 };
 
 legend.addTo(myMap);

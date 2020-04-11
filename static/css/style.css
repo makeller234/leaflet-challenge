@@ -8,3 +8,17 @@ body,
 html {
   height: 100%;
 }
+
+ul{
+  text-align: center;
+  padding-inline-start: 5px;
+  padding-inline-end: 5px;
+}
+
+.leaflet-bottom{
+  padding: 10px;
+  margin: 10px;
+  background-color: white;
+
+}
+
